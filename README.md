@@ -20,3 +20,5 @@ The first version of this implementation will not be written as efficiently as I
 have a linkedlist to store the symbol table rather than using a Hash Table so searching in the table would be O(n). I chose to implement the symbol table in my 
 first version of the assembler using Linkedlist simply because it's easy to write and it's better than writting it using an array since the size is not known so
 trying to expand the array could potentially increase runtime since memory may need to be copied to a new location
+
+**Note:** If the instructors of this course disagrees with my view of publishing my implemention of the assembler online, feel free to contact me to take it down.
