@@ -3,7 +3,7 @@
 #include <string.h>
 #include "symbol_table.h"
 
-char *dec_to_bin(struct symbol_table *symbol) {
+char *dec_to_bin(struct symbol_entry *symbol) {
 	char *bin;
 	int n = symbol->val;
 	int i = 0, b;
@@ -27,9 +27,9 @@ char *dec_to_bin(struct symbol_table *symbol) {
   	return bin;
 }
 
-struct symbol_table *create_sym_entry(char *symbol, int val) {
-	struct symbol_table *entry;
-	if (! ( entry = malloc(sizeof(struct symbol_table)) ) ) {
+struct symbol_entry *create_sym_entry(char *symbol, int val) {
+	struct symbol_entry *entry;
+	if (! ( entry = malloc(sizeof(struct symbol_entry)) ) ) {
 		perror("malloc");
 		return NULL;
 	}
@@ -46,25 +46,70 @@ struct symbol_table *create_sym_entry(char *symbol, int val) {
 	return entry;
 }
 
-void destroy_table (struct symbol_table *entry) {
+struct symbol_entry *insert_to_table(struct symbol_entry *table, char *symbol, int val) {
+	struct symbol_entry *entry = table;
+	int i = 0;
+
+	if (!table) {
+		fprintf(stderr, "insert_to_table: table cannot be NULL\n");
+		return NULL;
+	}
+
+	while (entry->next) {
+		entry = entry->next;
+		i++;
+	}
+
+	if (i < PREDEF_SYMBOL_NUM) {
+		fprintf(stderr, "insert_to_table: Table is missing pre-defined symbols\n");
+		goto terminate;
+	}
+
+	//if address needs to be dynamically allocated
+	if (val < 0) {
+		val = 16 + (i - PREDEF_SYMBOL_NUM);
+	}
+
+	if ( ! (entry->next = create_sym_entry(symbol, val)) ) {
+		goto terminate;
+	}
+	return table;
+
+terminate:
+	destroy_table(table);
+	return NULL;	
+}
+
+void destroy_table (struct symbol_entry *entry) {
 	if (!entry) {
 		return;
 	}
-	struct symbol_table *next = entry->next;
+	struct symbol_entry *next = entry->next;
 	free(entry);
 	destroy_table(next);
 }
 
-void print_sym_table(struct symbol_table *entry) {
+void print_sym_table(struct symbol_entry *entry) {
 	while (entry) {
 		printf("sym: %-3s\t val: %d\n", entry->symbol, entry->val);
 		entry = entry->next;
 	}
 }
 
-struct symbol_table *init_sym_table() {
-	struct symbol_table *first_entry = create_sym_entry("R0", 0);
-	struct symbol_table *entry = first_entry;
+int find_symbol(struct symbol_entry *entry, char *symbol) {
+	while (entry) {
+		if (strncmp(entry->symbol, symbol, strlen(entry->symbol)) == 0) {
+			return entry->val;
+		}
+		entry = entry->next;
+	}
+	return -1;
+}
+
+
+struct symbol_entry *init_sym_table() {
+	struct symbol_entry *table = create_sym_entry("R0", 0);
+	struct symbol_entry *entry = table;
 	int i, n;
 
 	char *symbols[7] = {"SCREEN", "KBD", "SP", "LCL", "ARG", "THIS","THAT"};
@@ -82,7 +127,7 @@ struct symbol_table *init_sym_table() {
 		}
 		snprintf(sym, n, "R%d", i);
 		if ( !(entry->next = create_sym_entry(sym, i)) ) {
-			destroy_table(first_entry);
+			destroy_table(table);
 			return NULL;
 		}
 		entry = entry->next;
@@ -91,16 +136,17 @@ struct symbol_table *init_sym_table() {
 	//Add Screen and Keyboard and special pre-defined symbols
 	for (i = 0; i < 7; i++) {
 		if ( !(entry->next = create_sym_entry(symbols[i], values[i])) ) {
-			destroy_table(first_entry);
+			destroy_table(table);
 			return NULL;
 		}
 		entry = entry->next;
 	}
-	//print_sym_table(first_entry);
+	//print_sym_table(table);
 	return table;
 }
 
 int main () {
-	init_sym_table();
+	//printf("%d\n", find_symbol(init_sym_table(), "SCREEN"));
+	print_sym_table(insert_to_table( insert_to_table(init_sym_table(), "test", -1), "test2", -1 ));
 	return 0;
 }
