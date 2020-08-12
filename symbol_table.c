@@ -3,9 +3,9 @@
 #include <string.h>
 #include "symbol_table.h"
 
-char *dec_to_bin(struct symbol_entry *symbol) {
+char *dec_to_bin(int n) 
+{
 	char *bin;
-	int n = symbol->val;
 	int i = 0, b;
 
 	if (!(bin = malloc(sizeof(char) * BUS_SIZE))) {
@@ -27,14 +27,18 @@ char *dec_to_bin(struct symbol_entry *symbol) {
   	return bin;
 }
 
-struct symbol_entry *create_sym_entry(char *symbol, int val) {
+struct symbol_entry *create_sym_entry(char *symbol, int val) 
+{
 	struct symbol_entry *entry;
 	if (! ( entry = malloc(sizeof(struct symbol_entry)) ) ) {
 		perror("malloc");
 		return NULL;
 	}
 	if (!symbol || strlen(symbol) > SYMBOL_SIZE) {
-		fprintf(stderr, "create_sym_entry: symbol is empty or exceeds over %d charact limit\n", SYMBOL_SIZE);
+		fprintf(stderr, 
+			"create_sym_entry: symbol is empty or exceeds over %d character " \
+			"limit\n", 
+			SYMBOL_SIZE);
 		return NULL;
 	}
 
@@ -46,7 +50,10 @@ struct symbol_entry *create_sym_entry(char *symbol, int val) {
 	return entry;
 }
 
-struct symbol_entry *insert_to_table(struct symbol_entry *table, char *symbol, int val) {
+struct symbol_entry *insert_to_table(struct symbol_entry *table, 
+                                     char * symbol, 
+                                     int val) 
+{
 	struct symbol_entry *entry = table;
 	int i = 0;
 
@@ -61,7 +68,8 @@ struct symbol_entry *insert_to_table(struct symbol_entry *table, char *symbol, i
 	}
 
 	if (i < PREDEF_SYMBOL_NUM) {
-		fprintf(stderr, "insert_to_table: Table is missing pre-defined symbols\n");
+		fprintf(stderr, 
+			"insert_to_table: Table is missing pre-defined symbols\n");
 		goto terminate;
 	}
 
@@ -144,9 +152,14 @@ struct symbol_entry *init_sym_table() {
 	//print_sym_table(table);
 	return table;
 }
-
+/*
 int main () {
 	//printf("%d\n", find_symbol(init_sym_table(), "SCREEN"));
-	print_sym_table(insert_to_table( insert_to_table(init_sym_table(), "test", -1), "test2", -1 ));
+	print_sym_table(insert_to_table(
+		insert_to_table(init_sym_table(), "test", -1), \
+		"test2", 
+		-1 
+	));
+	create_sym_entry(NULL, -1);
 	return 0;
-}
+}*/

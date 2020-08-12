@@ -16,10 +16,11 @@ struct symbol_entry *table;
 /*
 * Convert decimal to a 15 bit binary number
 *
+* @param symbol: the address in base 10 we wish to convert to binary
 * @return: returns a binary representation of the decimal number. Else NULL
 *    Note: allocates a 16 character string
 */
-char *dec_to_bin(struct symbol_entry *symbol);
+char *dec_to_bin(int dec_num);
 
 /*
 * Display all entries in the symbol table
@@ -73,8 +74,9 @@ int find_symbol(struct symbol_entry *entry, char *symbol);
 *                The programmer is expected to terminate the program since the
 *                assembler cannot continue assembling the machine code 
 */
-struct symbol_entry *insert_to_table(struct symbol_entry *table, char *symbol, 
-	int val);
+struct symbol_entry *insert_to_table(struct symbol_entry *table, 
+                                     char *symbol, 
+                                     int val);
 
 /*
 * Initializes all the pre-defined tables to the symbol table

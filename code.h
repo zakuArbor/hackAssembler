@@ -9,6 +9,7 @@
 enum instr_type {
     A_INSTR, //0
     C_INSTR, //1
+    INVALID,
 };
 
 //INSTRUCTION HEADER

@@ -47,6 +47,11 @@ char *extractFileName(const char *file) {
 	return NULL;
 }
 
+/*
+* Break given instructions into 
+*/
+struct instruct parse_instructions(char *instr);
+
 int main (int argc, char **argv) {
 	FILE *fp = NULL;
 	char *filename;
