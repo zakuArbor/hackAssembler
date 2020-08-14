@@ -349,6 +349,10 @@ struct instruct_st *parse_instruction_c(struct symbol_entry *table,
         }
     }
 
+    if (comp_pos == 0) {
+        return NULL;
+    }
+
     if (jump_pos < 2) { //2 characters is the shortest the instruction can be
         jump_pos = strlen(instr_str);
         jump_start = jump_pos;
@@ -448,7 +452,7 @@ void destroy_instruct_st(struct instruct_st *instruct) {
 	}
 	free(instruct);
 }
-
+/*
 int main () {
 	//printf("%s\n", comp_str2bin("D_MINUS_M"));
     struct instruct_st *instruct = NULL;
@@ -458,8 +462,8 @@ int main () {
 
     instruct = parse_instruction(table, "A=D+1;");
     print_instruct_st(instruct);
-    /*
-	printf(get_addr_bin(table, "PIKA"));
+    
+    printf(get_addr_bin(table, "PIKA"));
 	printf("\n");
 	instruct = parse_instruction(table, "@21 ");
 	print_instruct_st(instruct);
@@ -469,7 +473,8 @@ int main () {
 	//print_sym_table(table);
 	destroy_instruct_st(instruct);
 	//parse_instruction()
-    */
+    
 
 	return 0;
 }
+*/
