@@ -12,6 +12,12 @@ struct instruct_st {
 	union instruct_blob *blob;
 };
 
+
+struct instruct_a_blob {
+	char address[16];
+	int  is_label;
+};
+
 struct instruct_c_blob {
 	char *comp_bin;
 	char *dest_bin;
@@ -19,8 +25,8 @@ struct instruct_c_blob {
 };
 
 union instruct_blob {
-	char address[16];
-	struct instruct_c_blob blob;
+	struct instruct_a_blob blob_a;
+	struct instruct_c_blob blob_c;
 };
 
 #define PRE_TOKEN   0
@@ -64,6 +70,39 @@ char *comp_str2bin(char *comp_str);
 */
 char *get_addr_bin(struct symbol_entry *table, char *str);
 
+
+/*
+* Parse instruction as an address instruction and return the needed information
+* to be able to construct the machine code instruction
+*
+* @param table    : the symbol table to search or insert the symbol into
+* @param instr_str: the address instruction but stripped of the character that
+*                   identifies the instruction as an address type 
+*                   (i.e. rm '@'' or '(' character). Though if instruction is
+                    a label, it'll end with a ')'
+* @return         : allocates an instruct struct and populate it with the 
+*                   appropriate information to be able to construct the
+*                   machine code later
+* @return         : returns NULL if there is an error that occurs
+*/
+struct instruct_st *parse_instruction_a(struct symbol_entry *table, 
+                                        const char *instr_str);
+
+/*
+* Parse instruction as compute instruction and return the needed information
+* to be able to construct the machine code instruction
+*
+* @param table    : the symbol table to search or insert the symbol into
+* @param instr_str: the address instruction
+* @return         : allocates an instruct struct and populate it with the 
+*                   appropriate information to be able to construct the
+*                   machine code later
+* @return         : returns NULL if there is an error that occurs
+*/
+struct instruct_st *parse_instruction_c(struct symbol_entry *table, 
+                                        const char *instr_str);
+
+
 /*
 * Break assembly instructions into tokens/fields and generate the instruct_st 
 * entry for the given instruction
@@ -73,5 +112,20 @@ char *get_addr_bin(struct symbol_entry *table, char *str);
 *               to convert the instruction to machine code
 */
 struct instruct_st *parse_instruction(struct symbol_entry *table, 
-                                      char *instr_str);
+                                      const char *instr_str);
+
+/*
+* Destroy (free) instruct and its associated information
+* @param instruct: a struct that contains all the information about the
+*                  instruction to construct the machine code
+*/
+void destroy_instruct_st(struct instruct_st *instruct);
+
+/*
+* Display the instruction details
+* 
+* @param instruct: a struct that contains all the information about the
+*                  instruction to construct the machine code
+*/
+void print_instruct_st(struct instruct_st *instruct);
 #endif
