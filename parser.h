@@ -14,19 +14,25 @@ struct instruct_st {
 
 
 struct instruct_a_blob {
-	char address[16];
+	char address[BUS_SIZE];
 	int  is_label;
 };
 
 struct instruct_c_blob {
-	char *comp_bin;
-	char *dest_bin;
-	char *jump_bin;
+	char comp_bin[COMP_SIZE + 2]; //+1 for the a-bit to indicate whether it
+                                  // tries to use the M register
+	char dest_bin[DEST_SIZE + 1];
+	char jump_bin[JUMP_SIZE + 1];
 };
 
 union instruct_blob {
 	struct instruct_a_blob blob_a;
 	struct instruct_c_blob blob_c;
+};
+
+struct instruct_bin_entry {
+	char instr[BUS_SIZE + 1];
+	struct instruct_bin_entry *next;
 };
 
 #define PRE_TOKEN   0
@@ -86,6 +92,7 @@ char *get_addr_bin(struct symbol_entry *table, char *str);
 * @return         : returns NULL if there is an error that occurs
 */
 struct instruct_st *parse_instruction_a(struct symbol_entry *table, 
+                                        struct instruct_st * instruct, 
                                         const char *instr_str);
 
 /*
@@ -100,6 +107,7 @@ struct instruct_st *parse_instruction_a(struct symbol_entry *table,
 * @return         : returns NULL if there is an error that occurs
 */
 struct instruct_st *parse_instruction_c(struct symbol_entry *table, 
+                                        struct instruct_st * instruct,
                                         const char *instr_str);
 
 
@@ -112,6 +120,7 @@ struct instruct_st *parse_instruction_c(struct symbol_entry *table,
 *               to convert the instruction to machine code
 */
 struct instruct_st *parse_instruction(struct symbol_entry *table, 
+                                      struct instruct_st * instruct,
                                       const char *instr_str);
 
 /*
@@ -128,4 +137,21 @@ void destroy_instruct_st(struct instruct_st *instruct);
 *                  instruction to construct the machine code
 */
 void print_instruct_st(struct instruct_st *instruct);
+
+/*
+*
+*/
+char *assemble_instruct(struct instruct_st *instruct, char *instruct_bin);
+
+/*
+*
+*/
+void destroy_instructions(struct instruct_bin_entry *instr);
+
+
+/*
+*
+*/
+struct instruct_bin_entry *parse_instructions(FILE *fp);
+
 #endif
