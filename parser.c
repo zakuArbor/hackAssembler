@@ -173,7 +173,7 @@ char *get_addr_bin(struct symbol_entry *table, char *str) {
 			}
 		}
 		val = strtol(str, NULL, 10);
-		printf("str: %s\n", str);
+		
 	}
 	else if (isalpha(str[0])) {
 		//check if valid variable or label name
@@ -190,16 +190,13 @@ char *get_addr_bin(struct symbol_entry *table, char *str) {
 
 		//check if symbol exists in the symbol table
 		if ((val = find_symbol(table, str)) < 0) {
-			printf("check val: %d\n", val);
 			//enter symbol to the table
 			if (!insert_to_table(table, str, -1)) {
-				printf("rip\n");	
 				return NULL;
 			}
 			val = find_symbol(table, str);
 		}
 	}
-	printf("val: %d\n", val);
 	if (val > 0) {
 		return dec_to_bin(val);
 	}
@@ -207,9 +204,9 @@ char *get_addr_bin(struct symbol_entry *table, char *str) {
 }
 
 struct instruct_st *parse_instruction_a(struct symbol_entry *table, 
+                                        struct instruct_st *instruct,
                                         const char *instr_str) 
 {
-	struct instruct_st *instruct;
 	char symbol[SYMBOL_SIZE];
 	char *addr;
 	int i, len = 0, is_label = 0;
@@ -236,22 +233,12 @@ struct instruct_st *parse_instruction_a(struct symbol_entry *table,
 	if ( ! (addr = get_addr_bin(table, symbol)) ) {
 		return NULL;
 	}
-
-	if ( ! ( instruct = malloc(sizeof(struct instruct_st)) ) ) {
-		perror("malloc");
-		return NULL;
-	}
-
-	if ( ! ( instruct->blob = malloc(sizeof(union instruct_blob)) ) ) {
-		free(instruct);
-		perror("malloc");
-		return NULL;
-	}
 	
 	instruct->type = A_INSTR;
 	instruct->header_bin = A_HEADER;
     instruct->blob->blob_a.is_label = is_label;
 	strncpy(instruct->blob->blob_a.address, addr, 15);
+    instruct->blob->blob_a.address[15] = '\0';
 	return instruct;
 }
 
@@ -266,23 +253,20 @@ char *tokenize_instruction(char *instr_str,
         return NULL;
     }
 
-    printf("testing: %s\n", instr_str);
     instr_str[dest_pos] = '\0';
-    printf("test 2\n");
     instr_str[comp_pos] = '\0';
-    printf("test pika: %d\n", jump_pos);
     instr_str[jump_pos] = '\0';
 
     return instr_str;
 }
 
 struct instruct_st *parse_instruction_c(struct symbol_entry *table, 
+                                        struct instruct_st *instruct,    
                                         const char *instr_str_orig) 
 {
-    struct instruct_st *instruct = NULL;
     int i = 0;
-    int dest_pos   = 0,    comp_pos = 0,    jump_pos = 0;
-    int dest_start = -1, comp_start = -1, jump_start = -1, tmp_start;
+    int dest_end   = 0,    comp_end = 0,    jump_end = 0;
+    int dest_start = -1, comp_start = -1, jump_start = -1, tmp_start = -1;
     int state      = 0; //0: dest  1: comp  2: jump 
     char instr_str[INSTR_SIZE];
     char *jump_bin;
@@ -294,77 +278,71 @@ struct instruct_st *parse_instruction_c(struct symbol_entry *table,
     }
     strncpy(instr_str, instr_str_orig, strlen(instr_str_orig) % INSTR_SIZE);
     instr_str[strlen(instr_str_orig)] = '\0';
-
     for (i = 0; i < strlen(instr_str); i++) {
         switch(state) {
-            case 0: //search for destination token if exists
-                if (instr_str[i] == '=') {
-                    dest_pos = i;
-                    state = 1; //search for compute token
+            case 0:
+                if (tmp_start < 0 && isalnum(instr_str[i])) {
+                    tmp_start = i;
+                    break;
                 }
-                else if (dest_start < 0 && isalpha(instr_str[i])) {
-                    dest_start = i;
+                else if (instr_str[i] == '=') {
+                    dest_end   = i;
+                    dest_start = tmp_start;
+                    comp_start = i + 1;
+                    state++; //search for computation instruction
+                    break;
                 }
-                else if (instr_str[i] == '/') { //Ignore Comments
+                else if (instr_str[i] == '/') {
                     return NULL;
                 }
-                //no break; destination is optional
-            case 1: //search for compute token if exists
+                //no break
+            case 1:
                 if (instr_str[i] == ';') {
-                    comp_pos = i;
-                    state = 2; //search for jump token
-
-                    if (state == 0) { //no destination
+                    comp_end = i;
+                    state++; //search for JUMP instruction
+                    jump_start = i + 1;
+                    if (dest_start < 0) {
                         comp_start = tmp_start;
                     }
+                    break;
                 }
-                else if (comp_start < 0 && isalpha(instr_str[i])) {
-                    if (state == 1) {
-                        comp_start = i;
-                    }
-                    else {
-                        tmp_start = i;
-                    }
+                else if (instr_str[i] == '\r' || instr_str[i] == '\n') {
+                    comp_end = i;
+                    i = strlen(instr_str);
+                    break;
                 }
-                break; //breaks for the dest_post and comp_pos
-            case 2: ///search for Jump token
-                if (instr_str[i] == ' ' || instr_str[i] == '\r' || instr_str[i] == '\n') {
-                    jump_pos = i;
-                    state++;
-                    i = strlen(instr_str); //force loop to end
-                }
-                else if (jump_start < 0 && isalpha(instr_str[i])) {
-                    jump_start = i;
-                }
-                else if (i + 1 == strlen(instr_str)) {
-                    jump_pos = i+ 1;
-                    state++;
-                    i = strlen(instr_str); //force loop to end
+            case 2:
+                if (instr_str[i] == '\r' || instr_str[i] == '\n') {
+                    jump_end = i;
                 }
                 break;
             default:
-                //should never go here
-                jump_pos = i; //force loop to end
+                //do nothing
                 break;
         }
     }
 
-    if (comp_pos == 0) {
+    if (comp_end == 0) {
         return NULL;
     }
 
-    if (jump_pos < 2) { //2 characters is the shortest the instruction can be
-        jump_pos = strlen(instr_str);
-        jump_start = jump_pos;
+    if (dest_start < 1) {
+        dest_end = strlen(instr_str);
+        dest_start = dest_end;
     }
 
-    tokenize_instruction(instr_str, dest_pos, comp_pos, jump_pos);
+    if (jump_start < 1) {
+        jump_end = strlen(instr_str);
+        jump_start = jump_end;
+    }
+
+    tokenize_instruction(instr_str, dest_end, comp_end, jump_end);
 
     if ( !(dest_bin = dest_str2bin(instr_str+dest_start)) ) {
         fprintf(stderr, "parse_instruction_c: destination token is invalid\n");
         return NULL;
     }
-
+    
     if ( !(comp_bin = comp_str2bin(instr_str+comp_start)) ) {
         fprintf(stderr, "parse_instruction_c: computation token is invalid\n");
         return NULL;
@@ -375,30 +353,24 @@ struct instruct_st *parse_instruction_c(struct symbol_entry *table,
         return NULL;
     }
 
-    if (! (instruct = malloc(sizeof(struct instruct_st))) ) {
-        perror("malloc");
-        return NULL;
-    }
-
-    if (! (instruct->blob = (union instruct_blob *) malloc(sizeof(union instruct_blob))) ) {
-        perror("malloc");
-        return NULL;
-    }
-    
     instruct->type                  = C_INSTR;
     instruct->header_bin            = C_HEADER;
-    instruct->blob->blob_c.dest_bin = dest_bin;
-    instruct->blob->blob_c.comp_bin = comp_bin;
-    instruct->blob->blob_c.jump_bin = jump_bin;
-    return instruct;
+    strncpy(instruct->blob->blob_c.dest_bin, dest_bin, DEST_SIZE);
+    instruct->blob->blob_c.dest_bin[DEST_SIZE] = '\0';
+    strncpy(instruct->blob->blob_c.comp_bin, comp_bin, COMP_SIZE + 1); //+1 for the a-bit
+    instruct->blob->blob_c.dest_bin[COMP_SIZE] = '\0';
+    strncpy(instruct->blob->blob_c.jump_bin, jump_bin, JUMP_SIZE);
+    instruct->blob->blob_c.jump_bin[COMP_SIZE] = '\0';
+
+    return instruct;    
 }
 
-struct instruct_st *parse_instruction(struct symbol_entry *table, 
+struct instruct_st *parse_instruction(struct symbol_entry *table,
+                                      struct instruct_st *instruct,
                                       const char *instr_str) {
 	int i = 0;
 	int start = 0;//keeps track of the first position of the token being parsed
 	enum instr_type type = INVALID;
-	struct instruct_st *instruct = NULL;
 	
 	//find what type of instruction
 	for (i = 0; i < strlen(instr_str); i++) {
@@ -410,21 +382,24 @@ struct instruct_st *parse_instruction(struct symbol_entry *table,
 			type = A_INSTR;
 			break;
 		}
-		else {
+		else if (isalpha(instr_str[i])) {
 			start = i;
 			type  = C_INSTR;
-			break;
+            break;
 		}
+        else if (instr_str[i] == '/') {
+            return NULL;
+        }
 	}
 
 	instr_str += start; //move pointer to the first non-blank or the first character of the instruction/symbol
 
 	if (type == A_INSTR) {
-		instruct = parse_instruction_a(table, instr_str);
+		instruct = parse_instruction_a(table, instruct, instr_str);
 	}
 	else if (type == C_INSTR) {
-		instruct = parse_instruction_c(table, instr_str);
-	}
+		instruct = parse_instruction_c(table, instruct, instr_str);
+    }
 	else {
 		return NULL;
 	}
@@ -441,6 +416,11 @@ void print_instruct_st(struct instruct_st *instruct) {
 	if (instruct->type == A_INSTR && instruct->blob) {
 		printf("Instruction Address: %s\n", instruct->blob->blob_a.address);
 	}
+    else if (instruct->type == C_INSTR && instruct->blob) {
+        printf("COMP: %s\n", instruct->blob->blob_c.comp_bin);
+        printf("DEST: %s\n", instruct->blob->blob_c.dest_bin);
+        printf("JUMP: %s\n", instruct->blob->blob_c.jump_bin);
+    }
 }
 
 void destroy_instruct_st(struct instruct_st *instruct) {
@@ -452,26 +432,108 @@ void destroy_instruct_st(struct instruct_st *instruct) {
 	}
 	free(instruct);
 }
+
+char *assemble_instruct(struct instruct_st *instruct, char *instruct_bin) {
+    if (!instruct || !instruct_bin) {
+        return NULL;
+    }
+
+    if (instruct->type == A_INSTR && instruct->blob && 
+        instruct->blob->blob_a.is_label == 0)
+    {
+        snprintf(instruct_bin, A_HEADER_SIZE + BUS_SIZE,
+            "%s%s", instruct->header_bin, instruct->blob->blob_a.address
+        );
+    }
+    else if (instruct->type == C_INSTR) {
+        snprintf(instruct_bin,
+            C_HEADER_SIZE + 1 + DEST_SIZE + COMP_SIZE + JUMP_SIZE,
+            "%s1%s%s%s",
+            instruct->header_bin, instruct->blob->blob_c.comp_bin,
+            instruct->blob->blob_c.dest_bin, instruct->blob->blob_c.jump_bin
+        );
+    }
+    else {
+        printf("instruct type: %d\n", instruct->type);
+        printf("test\n");
+    }
+    return instruct_bin;
+}
+
+struct instruct_bin_entry *parse_instructions(FILE *fp) {
+    struct instruct_bin_entry * instr_list = NULL;
+    struct instruct_bin_entry * curr_instr = NULL;
+    struct instruct_st instruct_info;
+    char instruct_bin[BUS_SIZE + 1];
+    char line[INSTR_SIZE];
+
+    if ( ! (instr_list = malloc(sizeof(struct instruct_bin_entry))) )  {
+        perror("malloc");
+        return NULL;
+    }
+
+    if ( ! ( instruct_info.blob = malloc(sizeof(union instruct_blob)) ) ) {
+        free(instr_list);
+        perror("malloc");
+        return NULL;
+    }
+
+    curr_instr = instr_list;
+    curr_instr->next = NULL;
+
+    while (fgets(line, sizeof(line), fp)) {
+        if ((parse_instruction(table, &instruct_info, line))) {
+            if (! (assemble_instruct(&instruct_info, instruct_bin)) ) {
+                continue;
+            }
+            strncpy(curr_instr->instr, instruct_bin, BUS_SIZE);
+            curr_instr->instr[BUS_SIZE] = '\0';
+
+            if ( ! (curr_instr->next = malloc(sizeof(struct instruct_bin_entry))) )  {
+                perror("malloc");
+                destroy_instructions(instr_list);
+                free(instruct_info.blob);
+                return NULL;
+            }
+            curr_instr = curr_instr->next;
+            curr_instr->next = NULL;
+        }
+    }
+    free(instruct_info.blob);
+    return instr_list;
+}
+
+void destroy_instructions(struct instruct_bin_entry *instr) {
+    if (!instr) {
+        return;
+    }
+    struct instruct_bin_entry *next = instr->next;
+    free(instr);
+    destroy_instructions(next);
+}
+
 /*
 int main () {
 	//printf("%s\n", comp_str2bin("D_MINUS_M"));
-    struct instruct_st *instruct = NULL;
+    struct instruct_st instruct;
+    instruct.blob = malloc(sizeof(union instruct_blob));
 	struct symbol_entry *table = init_sym_table();
-    instruct = parse_instruction(table, "A=D+1;JMP");
-    print_instruct_st(instruct);
+    parse_instruction(table, &instruct, "A=D+1;JMP");
+    printf("instruct type <<>>: %d\n", (&instruct)->type);
+    print_instruct_st(&instruct);
 
-    instruct = parse_instruction(table, "A=D+1;");
-    print_instruct_st(instruct);
+    parse_instruction(table, &instruct, "A=D+1;");
+    print_instruct_st(&instruct);
     
     printf(get_addr_bin(table, "PIKA"));
 	printf("\n");
-	instruct = parse_instruction(table, "@21 ");
-	print_instruct_st(instruct);
+	parse_instruction(table, &instruct, "@21 ");
+	print_instruct_st(&instruct);
 
-	instruct = parse_instruction(table, "(PIKA)");
-	print_instruct_st(instruct);
+	parse_instruction(table, &instruct, "(PIKA)");
+	print_instruct_st(&instruct);
 	//print_sym_table(table);
-	destroy_instruct_st(instruct);
+	//destroy_instruct_st(instruct);
 	//parse_instruction()
     
 
