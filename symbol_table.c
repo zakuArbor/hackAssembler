@@ -152,17 +152,5 @@ struct symbol_entry *init_sym_table() {
 		}
 		entry = entry->next;
 	}
-	//print_sym_table(table);
 	return table;
 }
-/*
-int main () {
-	//printf("%d\n", find_symbol(init_sym_table(), "SCREEN"));
-	print_sym_table(insert_to_table(
-		insert_to_table(init_sym_table(), "test", -1), \
-		"test2", 
-		-1 
-	));
-	create_sym_entry(NULL, -1);
-	return 0;
-}*/

@@ -68,6 +68,13 @@ char *extractFileName(const char *file) {
     return NULL;
 }
 
+/*
+* The assembler's first pass through the assembly code to look ahead of all the
+* labels that exist in the program and insert them to the symbol table
+*
+* @param table: the symbol table
+* @param fp   : thre file pointer to read the source code
+*/
 void first_pass(struct symbol_entry *table, FILE *fp) {
     int i = 0;
     int line_num = 0, is_label = 0;
@@ -92,11 +99,23 @@ void first_pass(struct symbol_entry *table, FILE *fp) {
             }
         }
     }
-    printf("end first pass\n");
     fseek(fp, 0, SEEK_SET);
 }
 
-int write_binary_instructions(char *filename, struct instruct_bin_entry *instructions) {
+/*
+* Write the output of the assembler to the provided file
+*
+* @param  filename   : the name of the file without the hack extension to write
+*                      the output of the assembler to
+* @param instructions: the list of instructions stored in a data structure that
+*                      contains all the information needed to convert to 
+*                      machine code
+* @return            : 1 iff there is nothing wrong with the function.
+*                      0 otherwise
+*/
+int write_binary_instructions(char *filename, 
+	                          struct instruct_bin_entry *instructions) 
+{
     struct instruct_bin_entry *instruction = instructions;
     FILE *fp;
     int name_size = strlen(filename) + 5 + 1;
@@ -110,16 +129,14 @@ int write_binary_instructions(char *filename, struct instruct_bin_entry *instruc
     strncpy(fileout_name, filename, strlen(filename));
     fileout_name[strlen(filename)] = '\0';
     strncat(fileout_name, ".hack", 5);
-    //printf("after strncat: %s\tname_size: %d\n", fileout_name, name_size);
     fileout_name[strlen(filename) + 5] = '\0';
-    printf("%s\n", fileout_name);
+    
 
     if (! (fp = fopen(fileout_name, "w")) ) {
         free(fileout_name);
     }
     while (instruction) {
         fprintf(fp, "%s\n", instruction->instr);
-        //printf("|%s|\n", instruction->instr);
         instruction = instruction->next;
     }
     free(fileout_name);
@@ -136,8 +153,6 @@ int main (int argc, char **argv) {
     struct symbol_entry *table = NULL;
     struct instruct_bin_entry *instructions = NULL;
 
-    printf("Hello World\n");
-
     if (argc < 2) {
         fprintf(stderr, "usage: %s file.asm\n", argv[0]);
         status = 1;
@@ -149,8 +164,7 @@ int main (int argc, char **argv) {
         status = 1;
         goto cleanup;
     }
-    printf("filename: %s\n", filename);
-
+    
     if (!(fp = fopen(argv[1], "r"))) {
         fprintf(stderr, "Failed to open file: %s\n", argv[1]);
         perror("fopen");
@@ -169,7 +183,7 @@ int main (int argc, char **argv) {
         status = 1;
         goto cleanup;
     }
-    printf("after parse_instructions\n");
+    
     fclose(fp);
     fp = NULL;
     status = write_binary_instructions(filename, instructions);
@@ -185,6 +199,10 @@ cleanup:
 
     if (table) {
         destroy_table(table);
+    }
+
+    if (instructions) {
+        destroy_instructions(instructions);
     }
     return status;
 }

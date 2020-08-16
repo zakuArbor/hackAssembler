@@ -181,11 +181,9 @@ char *get_addr_bin(struct symbol_entry *table, char *str, const int new_val) {
 				return NULL;
 			}
 			val = find_symbol(table, str);
-            printf("inserted %s to %d\n", str, val);
 		}
 	}
 	if (val >= 0) {
-        printf("symbol: %s\tval: %d\n", str, val);
 		return dec_to_bin(val);
 	}
 	return NULL;
@@ -227,23 +225,7 @@ struct instruct_st *parse_instruction_a(struct symbol_entry *table,
 	char symbol[SYMBOL_SIZE];
 	char *addr;
 	int i, is_label = 0;
-    printf("addr: %s\n", instr_str);
-	/*for (i = 0; i < strlen(instr_str); i++) {
-		if (instr_str[i] == ' ' || instr_str[i] == '\r' || 
-            instr_str[i] == '\n') 
-		{
-			break;
-		}
-        else if (instr_str[i] == ')') {
-            is_label = 1;
-            break;
-        }
-		symbol[len] = instr_str[i];
-		len++;
-	}
-	symbol[len] = '\0';*/
     
-
 	if (parse_address_asm(instr_str, symbol, &is_label) == 0) {
         return NULL;
 	}
@@ -295,10 +277,6 @@ struct instruct_st *parse_instruction_c(struct symbol_entry *table,
         return NULL;
     }
 
-    printf("==========\n");
-    printf("read: |%s|\n", instr_str_orig);
-    
-
     strncpy(instr_str, instr_str_orig, strlen(instr_str_orig) % INSTR_SIZE);
     instr_str[strlen(instr_str_orig)] = '\0';
     for (i = 0; i < strlen(instr_str); i++) {
@@ -316,7 +294,6 @@ struct instruct_st *parse_instruction_c(struct symbol_entry *table,
                     break;
                 }
                 else if (instr_str[i] == '/' || instr_str[i] == ' ') {
-                    printf("rip\n");
                     return NULL;
                 }
                 //no break
@@ -352,7 +329,6 @@ struct instruct_st *parse_instruction_c(struct symbol_entry *table,
     }
 
     if (comp_end == 0) {
-        printf("rip\n");
         return NULL;
     }
 
@@ -368,9 +344,6 @@ struct instruct_st *parse_instruction_c(struct symbol_entry *table,
 
     tokenize_instruction(instr_str, dest_end, comp_end, jump_end);
 
-    //printf("comp: |%s|\tstart: %d\tend: %d\n", instr_str+comp_start, comp_start, comp_end);
-    //printf("jmp: |%s|\tstart: %d\tend: %d\n", instr_str+jump_start, jump_start, jump_end);
-    
     if ( !(dest_bin = dest_str2bin(instr_str+dest_start)) ) {
         fprintf(stderr, "parse_instruction_c: destination token is invalid\n");
         return NULL;
@@ -390,12 +363,12 @@ struct instruct_st *parse_instruction_c(struct symbol_entry *table,
     instruct->header_bin            = C_HEADER;
     strncpy(instruct->blob->blob_c.dest_bin, dest_bin, DEST_SIZE);
     instruct->blob->blob_c.dest_bin[DEST_SIZE] = '\0';
-    strncpy(instruct->blob->blob_c.comp_bin, comp_bin, COMP_SIZE + 1); //+1 for the a-bit
+    //+1 for the a-bit
+    strncpy(instruct->blob->blob_c.comp_bin, comp_bin, COMP_SIZE + 1);
     instruct->blob->blob_c.comp_bin[COMP_SIZE + 1] = '\0';
     strncpy(instruct->blob->blob_c.jump_bin, jump_bin, JUMP_SIZE);
     instruct->blob->blob_c.jump_bin[COMP_SIZE] = '\0';
-    print_instruct_st(instruct);
-    printf("==========\n");
+
     return instruct;    
 }
 
@@ -426,7 +399,11 @@ struct instruct_st *parse_instruction(struct symbol_entry *table,
         }
 	}
 
-	instr_str += start; //move pointer to the first non-blank or the first character of the instruction/symbol
+    /*
+    move pointer to the first non-blank or the first character of the 
+    instruction/symbol
+    */
+	instr_str += start;
 
 	if (type == A_INSTR) {
 		instruct = parse_instruction_a(table, instruct, instr_str);
@@ -493,7 +470,18 @@ char *assemble_instruct(struct instruct_st *instruct, char *instruct_bin) {
     return instruct_bin;
 }
 
-struct instruct_bin_entry *parse_instructions(struct symbol_entry *table, FILE *fp) {
+void destroy_instructions(struct instruct_bin_entry *instr) {
+    if (!instr) {
+        return;
+    }
+    struct instruct_bin_entry *next = instr->next;
+    free(instr);
+    destroy_instructions(next);
+}
+
+struct instruct_bin_entry *parse_instructions(struct symbol_entry *table, 
+                                              FILE *fp) 
+{
     struct instruct_bin_entry * instr_list = NULL;
     struct instruct_bin_entry * curr_instr = NULL;
     struct instruct_st instruct_info;
@@ -513,7 +501,10 @@ struct instruct_bin_entry *parse_instructions(struct symbol_entry *table, FILE *
             }
 
             if (!instr_list) {
-                if (! (instr_list = malloc(sizeof(struct instruct_bin_entry))) ) {
+                if (! (
+                    instr_list = malloc(sizeof(struct instruct_bin_entry))
+                    ) ) 
+                {
                     perror("malloc");
                     return NULL;
                 }
@@ -523,7 +514,10 @@ struct instruct_bin_entry *parse_instructions(struct symbol_entry *table, FILE *
                 continue;
             }
             
-            if ( ! (curr_instr->next = malloc(sizeof(struct instruct_bin_entry))) ) {
+            if ( ! (
+                curr_instr->next = malloc(sizeof(struct instruct_bin_entry))
+               ) ) 
+            {
                 perror("malloc");
                 destroy_instructions(instr_list);
                 free(instruct_info.blob);
@@ -540,41 +534,3 @@ struct instruct_bin_entry *parse_instructions(struct symbol_entry *table, FILE *
     free(instruct_info.blob);
     return instr_list;
 }
-
-void destroy_instructions(struct instruct_bin_entry *instr) {
-    if (!instr) {
-        return;
-    }
-    struct instruct_bin_entry *next = instr->next;
-    free(instr);
-    destroy_instructions(next);
-}
-
-/*
-int main () {
-	//printf("%s\n", comp_str2bin("D_MINUS_M"));
-    struct instruct_st instruct;
-    instruct.blob = malloc(sizeof(union instruct_blob));
-	struct symbol_entry *table = init_sym_table();
-    parse_instruction(table, &instruct, "A=D+1;JMP");
-    printf("instruct type <<>>: %d\n", (&instruct)->type);
-    print_instruct_st(&instruct);
-
-    parse_instruction(table, &instruct, "A=D+1;");
-    print_instruct_st(&instruct);
-    
-    printf(get_addr_bin(table, "PIKA"));
-	printf("\n");
-	parse_instruction(table, &instruct, "@21 ");
-	print_instruct_st(&instruct);
-
-	parse_instruction(table, &instruct, "(PIKA)");
-	print_instruct_st(&instruct);
-	//print_sym_table(table);
-	//destroy_instruct_st(instruct);
-	//parse_instruction()
-    
-
-	return 0;
-}
-*/

@@ -78,12 +78,24 @@ char *comp_str2bin(char *comp_str);
 */
 char *get_addr_bin(struct symbol_entry *table, char *str, int val);
 
+/*
+* Parse the given address instruction for the decimal address notation or the
+* symbol name. Returns the length of the parsed symbol.
+*
+* @param instr_str: the address instruction to parse
+* @param symbol   : the array to store the symbol or decimal address
+* @param is_label : the pointer to store whether the instruction is a label
+* @return         : the length of the parsed symbol
+*/
+int parse_address_asm(const char *instr_str, char *symbol, int *is_label);
 
 /*
 * Parse instruction as an address instruction and return the needed information
 * to be able to construct the machine code instruction
 *
 * @param table    : the symbol table to search or insert the symbol into
+* @param instruct : the data structure to store all the information about the
+*                   instruction to
 * @param instr_str: the address instruction but stripped of the character that
 *                   identifies the instruction as an address type 
 *                   (i.e. rm '@'' or '(' character). Though if instruction is
@@ -91,22 +103,33 @@ char *get_addr_bin(struct symbol_entry *table, char *str, int val);
 * @return         : allocates an instruct struct and populate it with the 
 *                   appropriate information to be able to construct the
 *                   machine code later
-* @return         : returns NULL if there is an error that occurs
+* @error          : returns NULL if there is an error that occurs
 */
 struct instruct_st *parse_instruction_a(struct symbol_entry *table, 
                                         struct instruct_st * instruct, 
                                         const char *instr_str);
 
 /*
+* To "split" the string into 3 parts by adding the null terminator between the
+* dest, comp, and jump tokens/keywords are located in the instruction
+*/
+char *tokenize_instruction(char *instr_str, 
+                          int dest_pos,
+                          int comp_pos,
+                          int jump_pos);
+
+/*
 * Parse instruction as compute instruction and return the needed information
 * to be able to construct the machine code instruction
 *
 * @param table    : the symbol table to search or insert the symbol into
+* @param instruct : the data structure to store all the information about the
+*                   instruction to
 * @param instr_str: the address instruction
 * @return         : allocates an instruct struct and populate it with the 
 *                   appropriate information to be able to construct the
 *                   machine code later
-* @return         : returns NULL if there is an error that occurs
+* @error          : returns NULL if there is an error that occurs
 */
 struct instruct_st *parse_instruction_c(struct symbol_entry *table, 
                                         struct instruct_st * instruct,
@@ -141,18 +164,32 @@ void destroy_instruct_st(struct instruct_st *instruct);
 void print_instruct_st(struct instruct_st *instruct);
 
 /*
+* Convert the given instruction data to machine code
 *
+* @param instr: the data structure that contains all the information needed for
+*               the assembler to convert the assembly code to a binary string
 */
 char *assemble_instruct(struct instruct_st *instruct, char *instruct_bin);
 
 /*
+* Destroy all the instructions in the linked list
 *
+* @param instr: the instruction in the linked list to delete
 */
 void destroy_instructions(struct instruct_bin_entry *instr);
 
 
 /*
+* Returns the list of instructions stored in a data structure that contains all
+* the relevant info to convert the assembly code to machine code. Assembly code
+* is read from the given file pointer.
 *
+* @param table: the symbol table for the program
+* @param fp   : the file pointer to read the input assembly code
+* @return     : a list of instructions stored in a data structure that constains
+*               all the info needed to assemble the program
+* @alloc      : allocates the list of instructions in the form of a linked list.
+*               Free the list using the function destroy_instructions
 */
 struct instruct_bin_entry *parse_instructions(struct symbol_entry *table, 
                                               FILE *fp);
