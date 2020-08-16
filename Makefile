@@ -6,7 +6,7 @@ LIB_OBJ = symbol_table.o parser.o
 all: assembler
 
 parser: parser.c symbol_table.c
-	$(CC) -o $@ $^ $(CFLAGS)  -fsanitize=address
+	$(CC) -o $@ $^ $(CFLAGS) -fsanitize=address
 
 assembler: assembler.c symbol_table.c parser.c
 	$(CC) -o $@ $^ $(CGLAGS) -fsanitize=address -lasan

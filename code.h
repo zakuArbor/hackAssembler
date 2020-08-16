@@ -14,7 +14,7 @@ enum instr_type {
 
 //INSTRUCTION HEADER
 #define C_HEADER   "111"
-#define A_HEADER   "1"
+#define A_HEADER   "0"
 
 #define C_HEADER_SIZE 3
 #define A_HEADER_SIZE 1

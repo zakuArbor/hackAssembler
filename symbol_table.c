@@ -3,6 +3,8 @@
 #include <string.h>
 #include "symbol_table.h"
 
+int symbol_num = 0;
+
 char *dec_to_bin(int n) 
 {
 	char *bin;
@@ -75,7 +77,8 @@ struct symbol_entry *insert_to_table(struct symbol_entry *table,
 
 	//if address needs to be dynamically allocated
 	if (val < 0) {
-		val = 16 + (i - PREDEF_SYMBOL_NUM);
+		val = 16 + symbol_num;
+		symbol_num++;
 	}
 
 	if ( ! (entry->next = create_sym_entry(symbol, val)) ) {
@@ -106,7 +109,7 @@ void print_sym_table(struct symbol_entry *entry) {
 
 int find_symbol(struct symbol_entry *entry, char *symbol) {
 	while (entry) {
-		if (strncmp(entry->symbol, symbol, strlen(entry->symbol)) == 0) {
+		if (strncmp(entry->symbol, symbol, strlen(symbol)) == 0) {
 			return entry->val;
 		}
 		entry = entry->next;

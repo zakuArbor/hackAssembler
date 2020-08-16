@@ -2,7 +2,7 @@
 #define SYMBOL_TABLE_H
 
 #define BUS_SIZE 16
-#define SYMBOL_SIZE 25
+#define SYMBOL_SIZE 50
 #define PREDEF_SYMBOL_NUM 22
 
 struct symbol_entry {

@@ -68,6 +68,34 @@ char *extractFileName(const char *file) {
     return NULL;
 }
 
+void first_pass(struct symbol_entry *table, FILE *fp) {
+    int i = 0;
+    int line_num = 0, is_label = 0;
+    fseek(fp, 0, SEEK_SET);
+    char line[INSTR_SIZE];
+    char symbol[SYMBOL_SIZE];
+    while (fgets(line, sizeof(line), fp)) {
+        for (i = 0; i < strlen(line); i++) {
+            if (line[i] == '/' || line[i] == '\r' || line[i] == '\n') {
+                break;
+            }
+            else if (isalnum(line[i]) || line[i] == '@') {
+                line_num++;
+                break;
+            }
+            else if (line[i] == '(') {
+                //printf("line: %s\n", line);
+                parse_address_asm(line, symbol, &is_label);
+                //printf("label: %s\n", symbol);
+                get_addr_bin(table, symbol, line_num);
+                break;
+            }
+        }
+    }
+    printf("end first pass\n");
+    fseek(fp, 0, SEEK_SET);
+}
+
 int write_binary_instructions(char *filename, struct instruct_bin_entry *instructions) {
     struct instruct_bin_entry *instruction = instructions;
     FILE *fp;
@@ -82,7 +110,7 @@ int write_binary_instructions(char *filename, struct instruct_bin_entry *instruc
     strncpy(fileout_name, filename, strlen(filename));
     fileout_name[strlen(filename)] = '\0';
     strncat(fileout_name, ".hack", 5);
-    printf("after strncat: %s\tname_size: %d\n", fileout_name, name_size);
+    //printf("after strncat: %s\tname_size: %d\n", fileout_name, name_size);
     fileout_name[strlen(filename) + 5] = '\0';
     printf("%s\n", fileout_name);
 
@@ -90,8 +118,8 @@ int write_binary_instructions(char *filename, struct instruct_bin_entry *instruc
         free(fileout_name);
     }
     while (instruction) {
-        printf("test\n");
         fprintf(fp, "%s\n", instruction->instr);
+        //printf("|%s|\n", instruction->instr);
         instruction = instruction->next;
     }
     free(fileout_name);
@@ -135,7 +163,9 @@ int main (int argc, char **argv) {
         goto cleanup;
     }
 
-    if ( ! (instructions = parse_instructions(fp)) ) {
+    first_pass(table, fp);
+
+    if ( ! (instructions = parse_instructions(table, fp)) ) {
         status = 1;
         goto cleanup;
     }

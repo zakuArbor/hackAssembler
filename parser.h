@@ -73,8 +73,10 @@ char *comp_str2bin(char *comp_str);
 * @param table: the symbol table to search the symbol in
 * @param str  : the symbol to search for if it's not direct addressing
 *               else, just simply convert the address to binary
+* @param val  : the value to assign to the symbol if symbol does not
+                presently exist in the table
 */
-char *get_addr_bin(struct symbol_entry *table, char *str);
+char *get_addr_bin(struct symbol_entry *table, char *str, int val);
 
 
 /*
@@ -152,6 +154,7 @@ void destroy_instructions(struct instruct_bin_entry *instr);
 /*
 *
 */
-struct instruct_bin_entry *parse_instructions(FILE *fp);
+struct instruct_bin_entry *parse_instructions(struct symbol_entry *table, 
+                                              FILE *fp);
 
 #endif
