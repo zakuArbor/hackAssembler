@@ -11,7 +11,7 @@ struct symbol_entry {
 	struct symbol_entry *next;
 };
 
-struct symbol_entry *table;
+extern struct symbol_entry *table;
 
 /*
 * Convert decimal to a 15 bit binary number

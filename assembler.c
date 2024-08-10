@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <ctype.h>
 
 #include "symbol_table.h"
 #include "parser.h"
@@ -128,7 +129,7 @@ int write_binary_instructions(char *filename,
 
     strncpy(fileout_name, filename, strlen(filename));
     fileout_name[strlen(filename)] = '\0';
-    strncat(fileout_name, ".hack", 5);
+    strncat(fileout_name, ".hack", 6);
     fileout_name[strlen(filename) + 5] = '\0';
     
 

@@ -191,7 +191,7 @@ char *get_addr_bin(struct symbol_entry *table, char *str, const int new_val) {
 
 int parse_address_asm(const char *instr_str, char *symbol, int *is_label) {
     if (!instr_str || symbol == NULL) {
-        return;
+        return 0;
     }
 
     int i, len = 0;
@@ -224,7 +224,7 @@ struct instruct_st *parse_instruction_a(struct symbol_entry *table,
 {
 	char symbol[SYMBOL_SIZE];
 	char *addr;
-	int i, is_label = 0;
+	int is_label = 0;
     
 	if (parse_address_asm(instr_str, symbol, &is_label) == 0) {
         return NULL;
